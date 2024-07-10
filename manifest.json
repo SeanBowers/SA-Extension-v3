@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "SpaceAlpha API Capture",
+  "version": "1.0",
+  "description": "Monitor SpaceAlpha network requests and convert JSON to CSV by Sean",
+  "permissions": ["webRequest", "activeTab", "storage", "scripting"],
+  "devtools_page": "devtools.html",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "48": "images/icon-48.png",
+      "128": "images/icon-128.png"
+    }
+  },
+  "host_permissions": ["<all_urls>"]
+}
