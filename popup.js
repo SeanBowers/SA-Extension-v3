@@ -1,77 +1,162 @@
 document.addEventListener("DOMContentLoaded", () => {
-  chrome.storage.local.get("apiResponses", (data) => {
-    const responses = data.apiResponses || {};
-    console.log("Received apiResponses in popup:", responses);
+  chrome.storage.local.get("allOwnedPlanets", (data) => {
+    const planets = data.allOwnedPlanets || [];
+    console.log("Retrieved planets data:", planets);
     const buttonsContainer = document.getElementById("buttons");
-    const responseTypes = Object.keys(responses);
+    const status = document.getElementById("status");
 
-    if (responseTypes.length === 0) {
-      buttonsContainer.innerHTML = "No responses captured.";
+    if (planets.length === 0) {
+      buttonsContainer.innerHTML = "No planets captured.";
     } else {
-      responseTypes.forEach((type) => {
-        if (responses[type].length > 0) {
-          // Only create buttons for non-empty response types
-          const button = document.createElement("button");
-          button.innerText = `${type}`;
-          button.onclick = () => {
-            console.log(`Preparing to copy data for ${type}`);
-            try {
-              const csvData = responses[type].map((json) => jsonToCsv(json)).join("\n\n");
-              console.log(`CSV data for ${type}:`, csvData);
-              navigator.clipboard
-                .writeText(csvData)
-                .then(() => {
-                  alert(`${type} copied to clipboard!`);
-                })
-                .catch((error) => {
-                  console.error("Error copying CSV data:", error);
-                  alert(`Failed to copy ${type} to clipboard.`);
-                });
-            } catch (error) {
-              console.error("Error preparing CSV data:", error);
-              alert(`Failed to prepare ${type} data.`);
-            }
-          };
-          buttonsContainer.appendChild(button);
-        }
+      planets.forEach((planet, index) => {
+        const button = document.createElement("button");
+        button.innerText = `Planet ${index + 1} copy`;
+        button.onclick = () => {
+          const tsvData = planetToTsv(planet);
+          navigator.clipboard
+            .writeText(tsvData)
+            .then(() => {
+              status.innerText = `Planet ${index + 1} data copied to clipboard!`;
+            })
+            .catch((error) => {
+              console.error("Error copying TSV data:", error);
+              status.innerText = `Failed to copy Planet ${index + 1} data.`;
+            });
+        };
+        buttonsContainer.appendChild(button);
       });
     }
   });
 });
 
-function jsonToCsv(json) {
-  const items = Array.isArray(json) ? json : [json];
-  if (items.length === 0) return ""; // Handle empty array case
+function planetToTsv(planet) {
+  const fields = [
+    "iron",
+    "coal",
+    "steel",
+    "tritium",
+    "gold",
+
+    "solar_power",
+    "coal_power",
+    "wind_power",
+    "tritium_power",
+    "wood_cutter",
+    "iron_mine",
+    "gold_mine",
+    "blast_furnace",
+    "industrial_food",
+    "income_facility",
+    "carbon_absorbers",
+    "defense_dome",
+    "gap_generator",
+    "widowmine_charger",
+    "giga_factory",
+    "tritium_batteries",
+    "energy_core",
+    "turn_generator",
+    "turn_storage",
+
+    "farmers",
+    "doctors",
+    "industrial_workers",
+    "commercial_workers",
+    "mine_workers",
+    "engineers",
+    "scientists",
+    "factory_workers",
+    "mine_slaves",
+    "teachers",
+    "professors",
+    "tacticians",
+    "spys",
+    "assassins",
+    "security_officers",
+    "attack_soldiers",
+    "attack_corporals",
+    "attack_majors",
+    "attack_champions",
+    "defensive_soldiers",
+    "defensive_corporals",
+    "defensive_majors",
+    "defensive_champions",
+  ];
+
+  const nestedFields = {
+    ships: [],
+    work_percentage: [
+      "solar_power",
+      "coal_power",
+      "wind_power",
+      "tritium_power",
+      "wood_cutter",
+      "iron_mine",
+      "gold_mine",
+      "blast_furnace",
+      "industrial_food",
+      "income_facility",
+      "carbon_absorbers",
+      "defense_dome",
+      "gap_generator",
+      "widowmine_charger",
+      "giga_factory",
+      "tritium_batteries",
+      "energy_core",
+      "turn_generator",
+      "turn_storage",
+    ],
+    skills: [
+      "farmializm",
+      "industrializm",
+      "commercializm",
+      "economy",
+      "mining",
+      "iron",
+      "gold",
+      "tritium_mining",
+      "metallurgy",
+      "practices",
+      "energy",
+      "solar",
+      "tritium_power",
+      "medicane",
+      "forestry",
+      "botany",
+      "computers",
+      "colonization",
+      "entertainment",
+      "ironized_gold",
+    ],
+  };
+
+  // Extract dynamic keys from ships if they are not predefined
+  if (planet.ships) {
+    nestedFields.ships = Object.keys(planet.ships);
+  }
 
   const replacer = (key, value) => (value === null ? "" : value);
-  
-  const headers = new Set();
-  items.forEach((item) => extractHeaders(item, headers));
-  const headerArray = Array.from(headers);
 
-  const csv = [
-    headerArray.join(","),
-    ...items.map((row) => headerArray.map((fieldName) => JSON.stringify(getNestedValue(row, fieldName), replacer)).join(","))
-  ].join("\r\n");
+  let tsv = fields
+    .map((field) => {
+      const value = getNestedValue(planet, field);
+      return `${field}\t${JSON.stringify(value, replacer)}`;
+    })
+    .join("\n");
 
-  return csv;
-}
-
-function extractHeaders(obj, headers, prefix = "") {
-  for (let key in obj) {
-    if (obj.hasOwnProperty(key)) {
-      const newPrefix = prefix ? `${prefix}.${key}` : key;
-      if (typeof obj[key] === "object" && obj[key] !== null && !Array.isArray(obj[key])) {
-        extractHeaders(obj[key], headers, newPrefix);
-      } else {
-        headers.add(newPrefix);
-      }
-    }
+  // Add nested fields data
+  for (const [key, subfields] of Object.entries(nestedFields)) {
+    tsv += "\n";
+    tsv += subfields
+      .map((subfield) => {
+        const value = getNestedValue(planet[key], subfield);
+        return `${key}.${subfield}\t${JSON.stringify(value, replacer)}`;
+      })
+      .join("\n");
   }
+
+  return tsv;
 }
 
 function getNestedValue(obj, key) {
-  return key.split('.').reduce((acc, part) => acc && acc[part], obj);
+  return key.split(".").reduce((acc, part) => acc && acc[part], obj);
 }
-
-

@@ -1,17 +1,17 @@
 body {
   font-family: Arial, sans-serif;
+}
+
+#container {
   padding: 10px;
-  background-color: #155;
 }
 
 button {
   display: block;
-  width: 100%;
-  padding: 10px;
-  margin: 5px 0;
-  font-size: 12px;
-  cursor: pointer;
-  color: black;
-  background-color: #8fbc8f;
-  border-radius: 25%;
+  margin-bottom: 10px;
+}
+
+#status {
+  margin-top: 10px;
+  font-weight: bold;
 }
